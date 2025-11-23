@@ -76,72 +76,47 @@ def load_hot100():
 def load_billboard200():
     billboard200 = pd.read_csv('billboard200.csv')
     billboard200 = billboard200.astype({'rank': 'int32'})
-    # billboard200 = billboard200.drop('weeks', axis=1)
+    billboard200 = billboard200.drop('weeks', axis=1)
     billboard200['date'] = pd.to_datetime(billboard200['date'])
 
     return billboard200
 
 
-def search_hot100(pattern: str, filter_type: str):
+def to_peak_appearances(df: pd.DataFrame):
+    # return only peak appearances of each song/album in the dataframe
+    peak_appearances = df.loc[df.groupby(['title', 'artist'])['rank'].idxmin()]
+    peak_appearances = peak_appearances.sort_values(
+        by=['rank', 'date'], ascending=[True, False]
+    )
+
+    return peak_appearances
+
+
+def search_hot100(pattern: str):
     update_hot100()
     hot100 = load_hot100()
-
-    # filter by pattern
-    if filter_type.lower().startswith('a'):
-        hot100 = hot100[
-            hot100['artist'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-        ]
-    elif filter_type.lower().startswith('s') or filter_type.lower().startswith('t'):
-        hot100 = hot100[
-            hot100['title'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-        ]
-    else:
-        hot100 = hot100[
-            hot100['artist'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-            | hot100['title'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-        ]
-
-    # filter by top appearance of each song by rank
-    hot100 = hot100.loc[hot100.groupby(['title', 'artist'])['rank'].idxmin()]
-    hot100 = hot100.sort_values(by=['rank', 'date'], ascending=[True, False])
-
-    print(hot100.head(n=20))
-
-
-def cleanup_billboard200():
     billboard200 = load_billboard200()
-    billboard200 = billboard200.drop_duplicates()
 
-    billboard200current = pd.read_csv('billboard-200-current.csv')
-    billboard200current = billboard200current.astype({'current_week': 'int32'})
-    billboard200current = billboard200current.drop('last_week', axis=1)
-    billboard200current = billboard200current.drop('peak_pos', axis=1)
-    billboard200current['chart_week'] = pd.to_datetime(
-        billboard200current['chart_week']
-    )
-    billboard200current = billboard200current.rename(
-        columns={
-            'chart_week': 'date',
-            'current_week': 'rank',
-            'performer': 'artist',
-            'wks_on_chart': 'weeks',
-        }
-    )
-    billboard200current = billboard200current.sort_values(
-        by=['date', 'rank'], ascending=[True, True]
-    )
-    billboard200current = billboard200current[
-        billboard200current['date'] > pd.to_datetime(dt.date(1975, 10, 11))
+    hot100 = hot100[
+        hot100['artist'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
+        | hot100['title'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
     ]
+    hot100 = to_peak_appearances(hot100)
+    hot100['type'] = 'song'
 
-    billboard200combined = pd.concat([billboard200, billboard200current])
-    billboard200combined = billboard200combined.sort_values(
-        by=['date', 'rank'], ascending=[True, True]
-    )
+    billboard200 = billboard200[
+        billboard200['artist'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
+        | billboard200['title'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
+    ]
+    billboard200 = to_peak_appearances(billboard200)
+    billboard200['type'] = 'album'
 
-    billboard200combined.to_csv('billboard200combined.csv', index=False)
+    all_results = pd.concat([hot100, billboard200])
+    all_results = all_results[['date', 'type', 'rank', 'title', 'artist']]
+    all_results = to_peak_appearances(all_results)
+
+    print(all_results.head(n=20))
 
 
 if __name__ == '__main__':
-    cleanup_billboard200()
-    # search_hot100(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')
+    search_hot100(sys.argv[1])

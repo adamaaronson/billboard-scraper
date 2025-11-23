@@ -36,8 +36,10 @@ def scrape_hot100(starting_date: dt.date):
             date += dt.timedelta(weeks=1)
 
 
-def scrape_billboard200():
-    date = dt.date(1975, 8, 23)
+def scrape_billboard200(starting_date: dt.date):
+    date = starting_date
+    if starting_date <= dt.date.today():
+        print('Scraping from', date)
 
     with open('billboard200.csv', 'a') as f:
         csv_writer = csv.writer(f)
@@ -62,6 +64,11 @@ def scrape_billboard200():
 def update_hot100():
     starting_date = get_starting_date()
     scrape_hot100(starting_date)
+
+
+def update_billboard200():
+    starting_date = get_starting_date()
+    scrape_billboard200(starting_date)
 
 
 def load_hot100():
@@ -94,6 +101,8 @@ def to_peak_appearances(df: pd.DataFrame):
 
 def search_hot100(pattern: str):
     update_hot100()
+    update_billboard200()
+
     hot100 = load_hot100()
     billboard200 = load_billboard200()
 
@@ -116,6 +125,24 @@ def search_hot100(pattern: str):
     all_results = to_peak_appearances(all_results)
 
     print(all_results.head(n=20))
+
+
+def clean_hot100():
+    hot100 = pd.read_csv('hot-100-current.csv')
+    hot100 = hot100.astype({'current_week': 'int32'})
+    hot100['chart_week'] = pd.to_datetime(hot100['chart_week'])
+    hot100 = hot100.rename(
+        columns={
+            'chart_week': 'date',
+            'current_week': 'rank',
+            'performer': 'artist',
+            'wks_on_chart': 'weeks',
+        }
+    )
+    hot100 = hot100.drop(['last_week', 'peak_pos'], axis=1)
+    hot100 = hot100.sort_values(['date', 'rank'], ascending=[True, True])
+
+    hot100.to_csv('hot100current.csv', index=False)
 
 
 if __name__ == '__main__':

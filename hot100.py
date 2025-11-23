@@ -73,6 +73,15 @@ def load_hot100():
     return hot100
 
 
+def load_billboard200():
+    billboard200 = pd.read_csv('billboard200.csv')
+    billboard200 = billboard200.astype({'rank': 'int32'})
+    # billboard200 = billboard200.drop('weeks', axis=1)
+    billboard200['date'] = pd.to_datetime(billboard200['date'])
+
+    return billboard200
+
+
 def search_hot100(pattern: str, filter_type: str):
     update_hot100()
     hot100 = load_hot100()
@@ -99,6 +108,40 @@ def search_hot100(pattern: str, filter_type: str):
     print(hot100.head(n=20))
 
 
+def cleanup_billboard200():
+    billboard200 = load_billboard200()
+    billboard200 = billboard200.drop_duplicates()
+
+    billboard200current = pd.read_csv('billboard-200-current.csv')
+    billboard200current = billboard200current.astype({'current_week': 'int32'})
+    billboard200current = billboard200current.drop('last_week', axis=1)
+    billboard200current = billboard200current.drop('peak_pos', axis=1)
+    billboard200current['chart_week'] = pd.to_datetime(
+        billboard200current['chart_week']
+    )
+    billboard200current = billboard200current.rename(
+        columns={
+            'chart_week': 'date',
+            'current_week': 'rank',
+            'performer': 'artist',
+            'wks_on_chart': 'weeks',
+        }
+    )
+    billboard200current = billboard200current.sort_values(
+        by=['date', 'rank'], ascending=[True, True]
+    )
+    billboard200current = billboard200current[
+        billboard200current['date'] > pd.to_datetime(dt.date(1975, 10, 11))
+    ]
+
+    billboard200combined = pd.concat([billboard200, billboard200current])
+    billboard200combined = billboard200combined.sort_values(
+        by=['date', 'rank'], ascending=[True, True]
+    )
+
+    billboard200combined.to_csv('billboard200combined.csv', index=False)
+
+
 if __name__ == '__main__':
-    scrape_billboard200()
+    cleanup_billboard200()
     # search_hot100(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')

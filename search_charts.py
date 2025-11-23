@@ -127,23 +127,5 @@ def search_hot100(pattern: str):
     print(all_results.head(n=20))
 
 
-def clean_hot100():
-    hot100 = pd.read_csv('hot-100-current.csv')
-    hot100 = hot100.astype({'current_week': 'int32'})
-    hot100['chart_week'] = pd.to_datetime(hot100['chart_week'])
-    hot100 = hot100.rename(
-        columns={
-            'chart_week': 'date',
-            'current_week': 'rank',
-            'performer': 'artist',
-            'wks_on_chart': 'weeks',
-        }
-    )
-    hot100 = hot100.drop(['last_week', 'peak_pos'], axis=1)
-    hot100 = hot100.sort_values(['date', 'rank'], ascending=[True, True])
-
-    hot100.to_csv('hot100current.csv', index=False)
-
-
 if __name__ == '__main__':
     search_hot100(sys.argv[1])

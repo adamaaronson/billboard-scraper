@@ -36,6 +36,29 @@ def scrape_hot100(starting_date: dt.date):
             date += dt.timedelta(weeks=1)
 
 
+def scrape_billboard200():
+    date = dt.date(1975, 8, 23)
+
+    with open('billboard200.csv', 'a') as f:
+        csv_writer = csv.writer(f)
+
+        while date <= dt.date.today():
+            chart = billboard.ChartData('billboard-200', date.isoformat(), timeout=None)
+            for album in chart:
+                csv_writer.writerow(
+                    [
+                        date,
+                        album.rank,
+                        album.title,
+                        album.artist,
+                        album.weeks,
+                    ]
+                )
+            print('Wrote', date)
+
+            date += dt.timedelta(weeks=1)
+
+
 def update_hot100():
     starting_date = get_starting_date()
     scrape_hot100(starting_date)
@@ -77,4 +100,5 @@ def search_hot100(pattern: str, filter_type: str):
 
 
 if __name__ == '__main__':
-    search_hot100(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')
+    scrape_billboard200()
+    # search_hot100(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else '')

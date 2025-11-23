@@ -1,7 +1,5 @@
 # billboard-scraper
 
-Usage:
-
 ```
 >>> python3 search_charts.py word
 

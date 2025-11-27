@@ -144,7 +144,7 @@ def search_charts(args: dict):
     all_results = all_results[['date', 'type', 'rank', 'title', 'artist']]
     all_results = to_peak_appearances(all_results)
 
-    print(all_results.head(n=30).to_string(index=False))
+    print(all_results.head(n=args.number).to_string(index=False))
 
 
 def main():
@@ -158,6 +158,7 @@ def main():
     parser.add_argument(
         '-n',
         '--number',
+        default=30,
         type=int,
         help='maximum number of results to display',
     )

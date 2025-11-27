@@ -1,3 +1,4 @@
+import argparse
 import billboard
 import csv
 import pandas as pd
@@ -99,24 +100,43 @@ def to_peak_appearances(df: pd.DataFrame):
     return peak_appearances
 
 
-def search_hot100(pattern: str):
+def search_chart(chart: pd.DataFrame, pattern: str, artist: bool, title: bool):
+    return chart[
+        (
+            artist
+            & chart['artist'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
+        )
+        | (
+            title
+            & chart['title'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
+        )
+    ]
+
+
+def search_charts(args: dict):
     update_hot100()
     update_billboard200()
 
     hot100 = load_hot100()
     billboard200 = load_billboard200()
 
-    hot100 = hot100[
-        hot100['artist'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-        | hot100['title'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-    ]
+    search_all = not (args.search_artists or args.search_albums or args.search_songs)
+
+    hot100 = search_chart(
+        hot100,
+        args.pattern,
+        search_all or args.search_artists,
+        search_all or args.search_songs,
+    )
     hot100 = to_peak_appearances(hot100)
     hot100['type'] = 'song'
 
-    billboard200 = billboard200[
-        billboard200['artist'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-        | billboard200['title'].str.contains(rf'\b{pattern}\b', case=False, regex=True)
-    ]
+    billboard200 = search_chart(
+        billboard200,
+        args.pattern,
+        search_all or args.search_artists,
+        search_all or args.search_albums,
+    )
     billboard200 = to_peak_appearances(billboard200)
     billboard200['type'] = 'album'
 
@@ -124,8 +144,51 @@ def search_hot100(pattern: str):
     all_results = all_results[['date', 'type', 'rank', 'title', 'artist']]
     all_results = to_peak_appearances(all_results)
 
-    print(all_results.head(n=20))
+    print(all_results.head(n=30).to_string(index=False))
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Billboard chart search')
+
+    parser.add_argument(
+        dest='pattern',
+        type=str,
+        help='word, phrase, or regex pattern to search',
+    )
+    parser.add_argument(
+        '-n',
+        '--number',
+        type=int,
+        help='maximum number of results to display',
+    )
+
+    result_types = parser.add_mutually_exclusive_group()
+    result_types.add_argument(
+        '--artist',
+        dest='search_artists',
+        default=False,
+        action='store_true',
+        help='only search artist names',
+    )
+    result_types.add_argument(
+        '--album',
+        dest='search_albums',
+        default=False,
+        action='store_true',
+        help='only search album titles',
+    )
+    result_types.add_argument(
+        '--song',
+        dest='search_songs',
+        default=False,
+        action='store_true',
+        help='only search song titles',
+    )
+
+    args = parser.parse_args()
+
+    search_charts(args)
 
 
 if __name__ == '__main__':
-    search_hot100(sys.argv[1])
+    main()

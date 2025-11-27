@@ -1,8 +1,8 @@
 # billboard-scraper
 
-```
-Billboard chart search
+Search the history of Billboard's Hot 100 and Billboard 200 charts.
 
+```
 positional arguments:
   pattern               word, phrase, or regex pattern to search
 

@@ -1,6 +1,21 @@
 # billboard-scraper
 
 ```
+Billboard chart search
+
+positional arguments:
+  pattern               word, phrase, or regex pattern to search
+
+options:
+  -h, --help            show this help message and exit
+  -n NUMBER, --number NUMBER
+                        maximum number of results to display
+  --artist              only search artist names
+  --album               only search album titles
+  --song                only search song titles
+```
+
+```
 >>> python3 search_charts.py word
 
              date   type  rank                                              title               artist

@@ -3,19 +3,24 @@ import billboard
 import csv
 import pandas as pd
 import datetime as dt
-import sys
 
 
-def get_starting_date():
+def get_hot100_starting_date():
     hot100 = load_hot100()
     last_date = hot100['date'].max()
+    return last_date.to_pydatetime().date() + dt.timedelta(weeks=1)
+
+
+def get_billboard200_starting_date():
+    billboard200 = load_billboard200()
+    last_date = billboard200['date'].max()
     return last_date.to_pydatetime().date() + dt.timedelta(weeks=1)
 
 
 def scrape_hot100(starting_date: dt.date):
     date = starting_date
     if starting_date <= dt.date.today():
-        print('Scraping from', date)
+        print('Scraping Hot 100 from', date)
 
     with open('hot100.csv', 'a') as f:
         csv_writer = csv.writer(f)
@@ -40,7 +45,7 @@ def scrape_hot100(starting_date: dt.date):
 def scrape_billboard200(starting_date: dt.date):
     date = starting_date
     if starting_date <= dt.date.today():
-        print('Scraping from', date)
+        print('Scraping Billboard 200 from', date)
 
     with open('billboard200.csv', 'a') as f:
         csv_writer = csv.writer(f)
@@ -63,12 +68,12 @@ def scrape_billboard200(starting_date: dt.date):
 
 
 def update_hot100():
-    starting_date = get_starting_date()
+    starting_date = get_hot100_starting_date()
     scrape_hot100(starting_date)
 
 
 def update_billboard200():
-    starting_date = get_starting_date()
+    starting_date = get_billboard200_starting_date()
     scrape_billboard200(starting_date)
 
 
@@ -92,7 +97,11 @@ def load_billboard200():
 
 def to_peak_appearances(df: pd.DataFrame):
     # return only peak appearances of each song/album in the dataframe
-    peak_appearances = df.loc[df.groupby(['title', 'artist'])['rank'].idxmin()]
+    peak_appearances = df.loc[
+        df.groupby(
+            ['title', 'artist', 'type'] if 'type' in df else ['title', 'artist']
+        )['rank'].idxmin()
+    ]
     peak_appearances = peak_appearances.sort_values(
         by=['rank', 'date'], ascending=[True, False]
     )
